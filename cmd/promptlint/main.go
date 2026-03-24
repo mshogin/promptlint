@@ -6,29 +6,85 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/mikeshogin/promptlint/pkg/analyzer"
 )
 
+// Exit codes for pipeline integration.
+const (
+	ExitHaiku  = 0
+	ExitSonnet = 1
+	ExitOpus   = 2
+	ExitError  = 3
+)
+
+func modelExitCode(model string) int {
+	switch model {
+	case "haiku":
+		return ExitHaiku
+	case "sonnet":
+		return ExitSonnet
+	case "opus":
+		return ExitOpus
+	default:
+		return ExitError
+	}
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Usage: promptlint {analyze|serve}\n")
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "\nanalyze flags:\n")
+		fmt.Fprintf(os.Stderr, "  --output-model   print only model name\n")
+		fmt.Fprintf(os.Stderr, "  --format=json    output format: json (default), brief\n")
+		fmt.Fprintf(os.Stderr, "  --exit-code      use model-based exit codes (0=haiku,1=sonnet,2=opus)\n")
+		os.Exit(ExitError)
 	}
 
 	cmd := os.Args[1]
 
 	switch cmd {
 	case "analyze":
+		// Parse flags
+		outputModel := false
+		exitCode := false
+		format := "json"
+		for _, arg := range os.Args[2:] {
+			switch {
+			case arg == "--output-model":
+				outputModel = true
+			case arg == "--exit-code":
+				exitCode = true
+			case strings.HasPrefix(arg, "--format="):
+				format = strings.TrimPrefix(arg, "--format=")
+			}
+		}
+
 		input, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
-			os.Exit(1)
+			os.Exit(ExitError)
 		}
 
 		result := analyzer.Analyze(string(input))
-		out, _ := json.MarshalIndent(result, "", "  ")
-		fmt.Println(string(out))
+
+		if outputModel {
+			fmt.Println(result.SuggestedModel)
+		} else {
+			switch format {
+			case "brief":
+				fmt.Printf("complexity=%s model=%s words=%d action=%s\n",
+					result.Complexity, result.SuggestedModel, result.Words, result.Action)
+			default:
+				out, _ := json.MarshalIndent(result, "", "  ")
+				fmt.Println(string(out))
+			}
+		}
+
+		if exitCode {
+			os.Exit(modelExitCode(result.SuggestedModel))
+		}
 
 	case "serve":
 		port := "8090"
