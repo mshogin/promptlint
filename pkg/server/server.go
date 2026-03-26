@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/mikeshogin/promptlint/pkg/analyzer"
+	"github.com/mikeshogin/promptlint/pkg/router"
 	"github.com/mikeshogin/promptlint/pkg/validator"
 )
 
@@ -14,6 +16,7 @@ func New() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/analyze", handleAnalyze)
 	mux.HandleFunc("/validate", handleValidate)
+	mux.HandleFunc("/route", handleRoute)
 	mux.HandleFunc("/health", handleHealth)
 	return mux
 }
@@ -78,6 +81,36 @@ func handleValidate(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(results)
+}
+
+// handleRoute accepts POST /route with a JSON body {"text": "..."} or plain text.
+// It returns a routing decision as JSON.
+func handleRoute(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "read error", http.StatusBadRequest)
+		return
+	}
+
+	// Try to parse as JSON {"text": "..."}
+	var req struct {
+		Text string `json:"text"`
+	}
+	text := strings.TrimSpace(string(body))
+	if json.Unmarshal(body, &req) == nil && req.Text != "" {
+		text = req.Text
+	}
+
+	rt := router.NewDefault()
+	result := rt.Route(text)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }
 
 // handleHealth returns a simple health check response.

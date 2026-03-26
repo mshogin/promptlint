@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/mikeshogin/promptlint/pkg/analyzer"
+	"github.com/mikeshogin/promptlint/pkg/router"
 	"github.com/mikeshogin/promptlint/pkg/server"
 	"github.com/mikeshogin/promptlint/pkg/validator"
 )
@@ -36,11 +37,13 @@ func modelExitCode(model string) int {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: promptlint {analyze|validate|serve}\n")
+		fmt.Fprintf(os.Stderr, "Usage: promptlint {analyze|validate|route|serve}\n")
 		fmt.Fprintf(os.Stderr, "\nanalyze flags:\n")
 		fmt.Fprintf(os.Stderr, "  --output-model   print only model name\n")
 		fmt.Fprintf(os.Stderr, "  --format=json    output format: json (default), brief\n")
 		fmt.Fprintf(os.Stderr, "  --exit-code      use model-based exit codes (0=haiku,1=sonnet,2=opus)\n")
+		fmt.Fprintf(os.Stderr, "\nroute:\n")
+		fmt.Fprintf(os.Stderr, "  reads prompt from stdin, prints routing decision as JSON\n")
 		fmt.Fprintf(os.Stderr, "\nvalidate:\n")
 		fmt.Fprintf(os.Stderr, "  reads prompt from stdin, prints JSON array of violations\n")
 		os.Exit(ExitError)
@@ -114,6 +117,19 @@ func main() {
 			os.Exit(1)
 		}
 
+	case "route":
+		input, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
+			os.Exit(ExitError)
+		}
+
+		r := router.NewDefault()
+		result := r.Route(strings.TrimSpace(string(input)))
+
+		out, _ := json.MarshalIndent(result, "", "  ")
+		fmt.Println(string(out))
+
 	case "validate":
 		input, err := io.ReadAll(os.Stdin)
 		if err != nil {
@@ -139,7 +155,7 @@ func main() {
 		}
 
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\nUsage: promptlint {analyze|validate|serve [port]}\n", cmd)
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\nUsage: promptlint {analyze|validate|route|serve [port]}\n", cmd)
 		os.Exit(1)
 	}
 }
