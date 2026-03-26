@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/mikeshogin/promptlint/pkg/analyzer"
+	"github.com/mikeshogin/promptlint/pkg/server"
 )
 
 // Exit codes for pipeline integration.
@@ -87,16 +88,25 @@ func main() {
 		}
 
 	case "serve":
-		port := "8090"
-		if len(os.Args) > 2 {
-			port = os.Args[2]
+		port := "8080"
+		for _, arg := range os.Args[2:] {
+			if strings.HasPrefix(arg, "--port=") {
+				port = strings.TrimPrefix(arg, "--port=")
+			} else if arg == "--port" {
+				// handled by next iteration below
+			}
 		}
+		// Support --port 8080 (space-separated)
+		args := os.Args[2:]
+		for i, arg := range args {
+			if arg == "--port" && i+1 < len(args) {
+				port = args[i+1]
+			}
+		}
+
 		fmt.Fprintf(os.Stderr, "promptlint server on :%s\n", port)
 
-		http.HandleFunc("/analyze", handleAnalyze)
-		http.HandleFunc("/health", handleHealth)
-
-		if err := http.ListenAndServe(":"+port, nil); err != nil {
+		if err := http.ListenAndServe(":"+port, server.New()); err != nil {
 			fmt.Fprintf(os.Stderr, "Server error: %v\n", err)
 			os.Exit(1)
 		}
@@ -107,24 +117,3 @@ func main() {
 	}
 }
 
-func handleAnalyze(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "POST only", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "read error", http.StatusBadRequest)
-		return
-	}
-
-	result := analyzer.Analyze(string(body))
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
-}
-
-func handleHealth(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(`{"status":"ok"}`))
-}
