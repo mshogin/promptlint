@@ -28,6 +28,9 @@ type Result struct {
 	Domain     map[string]float64 `json:"domain"`
 	Complexity string             `json:"complexity"`
 
+	// NLP metrics
+	NLPMetrics metrics.NLPMetrics `json:"nlp_metrics"`
+
 	// Routing suggestion
 	SuggestedModel string `json:"suggested_model"`
 }
@@ -60,6 +63,9 @@ func AnalyzeWithConfig(prompt string, cfg *config.Config) Result {
 	r.Action = metrics.DetectAction(prompt)
 	r.Domain = metrics.ClassifyDomain(prompt)
 	r.Complexity = classifyComplexity(r)
+
+	// NLP metrics
+	r.NLPMetrics = metrics.AnalyzeNLP(prompt)
 
 	// Routing
 	r.SuggestedModel = suggestModel(r, cfg)
