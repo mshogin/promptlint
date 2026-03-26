@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,7 +9,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mikeshogin/promptlint/pkg/abtest"
 	"github.com/mikeshogin/promptlint/pkg/analyzer"
+	"github.com/mikeshogin/promptlint/pkg/config"
 	"github.com/mikeshogin/promptlint/pkg/router"
 	"github.com/mikeshogin/promptlint/pkg/server"
 	"github.com/mikeshogin/promptlint/pkg/validator"
@@ -37,7 +40,7 @@ func modelExitCode(model string) int {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: promptlint {analyze|validate|route|serve}\n")
+		fmt.Fprintf(os.Stderr, "Usage: promptlint {analyze|validate|route|serve|ab}\n")
 		fmt.Fprintf(os.Stderr, "\nanalyze flags:\n")
 		fmt.Fprintf(os.Stderr, "  --output-model   print only model name\n")
 		fmt.Fprintf(os.Stderr, "  --format=json    output format: json (default), brief\n")
@@ -46,6 +49,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  reads prompt from stdin, prints routing decision as JSON\n")
 		fmt.Fprintf(os.Stderr, "\nvalidate:\n")
 		fmt.Fprintf(os.Stderr, "  reads prompt from stdin, prints JSON array of violations\n")
+		fmt.Fprintf(os.Stderr, "\nab flags:\n")
+		fmt.Fprintf(os.Stderr, "  --config-b=FILE  path to alternative config YAML (variant B)\n")
+		fmt.Fprintf(os.Stderr, "  --format=json    output format: json (default), brief\n")
+		fmt.Fprintf(os.Stderr, "  reads one prompt per line from stdin\n")
 		os.Exit(ExitError)
 	}
 
@@ -154,8 +161,90 @@ func main() {
 			}
 		}
 
+	case "ab":
+		configBPath := ""
+		format := "json"
+		for _, arg := range os.Args[2:] {
+			switch {
+			case strings.HasPrefix(arg, "--config-b="):
+				configBPath = strings.TrimPrefix(arg, "--config-b=")
+			case strings.HasPrefix(arg, "--format="):
+				format = strings.TrimPrefix(arg, "--format=")
+			}
+		}
+
+		cfgA := config.LoadOrDefault()
+
+		var cfgB *config.Config
+		if configBPath != "" {
+			var err error
+			cfgB, err = config.Load(configBPath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error loading config-b: %v\n", err)
+				os.Exit(ExitError)
+			}
+		} else {
+			// Default variant B: more aggressive routing - push medium to haiku, high to sonnet
+			cfgB = &config.Config{
+				Tiers: []config.Tier{
+					{Name: "haiku", MaxComplexity: "medium", MaxTokens: 5000, CostPer1k: 0.80},
+					{Name: "sonnet", MaxComplexity: "high", MaxTokens: 100000, CostPer1k: 3.00},
+				},
+				DefaultTier: "sonnet",
+			}
+		}
+
+		test := abtest.New("routing-comparison", cfgA, cfgB)
+
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if line == "" {
+				continue
+			}
+			test.Run(line)
+		}
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
+			os.Exit(ExitError)
+		}
+
+		summary := test.Summary()
+
+		switch format {
+		case "brief":
+			fmt.Printf("prompts=%d differs=%d same=%d cost_a=%.2f cost_b=%.2f cost_diff=%.1f%% cheaper=%s\n",
+				summary.TotalPrompts,
+				summary.DifferentRoutes,
+				summary.SameRoutes,
+				summary.AvgCostA,
+				summary.AvgCostB,
+				summary.CostDiffPct,
+				summary.CheaperVariant(),
+			)
+			if summary.DifferentRoutes > 0 {
+				fmt.Println("\nDiffering routes:")
+				for _, cmp := range test.Results() {
+					if cmp.Differs {
+						fmt.Printf("  [%s] A->%s B->%s (score=%.2f)\n",
+							cmp.PromptHash, cmp.A.RoutedModel, cmp.B.RoutedModel, cmp.A.Score)
+					}
+				}
+			}
+		default:
+			type fullOutput struct {
+				Summary     abtest.Summary      `json:"summary"`
+				Comparisons []abtest.ABComparison `json:"comparisons"`
+			}
+			out, _ := json.MarshalIndent(fullOutput{
+				Summary:     summary,
+				Comparisons: test.Results(),
+			}, "", "  ")
+			fmt.Println(string(out))
+		}
+
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\nUsage: promptlint {analyze|validate|route|serve [port]}\n", cmd)
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\nUsage: promptlint {analyze|validate|route|serve|ab}\n", cmd)
 		os.Exit(1)
 	}
 }
