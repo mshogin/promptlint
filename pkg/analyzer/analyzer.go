@@ -6,6 +6,7 @@ import (
 
 	"github.com/mikeshogin/promptlint/pkg/config"
 	"github.com/mikeshogin/promptlint/pkg/metrics"
+	"github.com/mikeshogin/promptlint/pkg/score"
 )
 
 // Result contains all extracted metrics from a prompt.
@@ -33,6 +34,9 @@ type Result struct {
 
 	// Routing suggestion
 	SuggestedModel string `json:"suggested_model"`
+
+	// Quality score
+	PromptScore score.PromptScore `json:"prompt_score"`
 }
 
 // Analyze extracts metrics from a prompt string using the default config.
@@ -66,6 +70,9 @@ func AnalyzeWithConfig(prompt string, cfg *config.Config) Result {
 
 	// NLP metrics
 	r.NLPMetrics = metrics.AnalyzeNLP(prompt)
+
+	// Quality score
+	r.PromptScore = score.ComputePromptScore(prompt, r.NLPMetrics)
 
 	// Routing
 	r.SuggestedModel = suggestModel(r, cfg)
