@@ -10,6 +10,7 @@ import (
 
 	"github.com/mikeshogin/promptlint/pkg/analyzer"
 	"github.com/mikeshogin/promptlint/pkg/server"
+	"github.com/mikeshogin/promptlint/pkg/validator"
 )
 
 // Exit codes for pipeline integration.
@@ -35,11 +36,13 @@ func modelExitCode(model string) int {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: promptlint {analyze|serve}\n")
+		fmt.Fprintf(os.Stderr, "Usage: promptlint {analyze|validate|serve}\n")
 		fmt.Fprintf(os.Stderr, "\nanalyze flags:\n")
 		fmt.Fprintf(os.Stderr, "  --output-model   print only model name\n")
 		fmt.Fprintf(os.Stderr, "  --format=json    output format: json (default), brief\n")
 		fmt.Fprintf(os.Stderr, "  --exit-code      use model-based exit codes (0=haiku,1=sonnet,2=opus)\n")
+		fmt.Fprintf(os.Stderr, "\nvalidate:\n")
+		fmt.Fprintf(os.Stderr, "  reads prompt from stdin, prints JSON array of violations\n")
 		os.Exit(ExitError)
 	}
 
@@ -111,8 +114,32 @@ func main() {
 			os.Exit(1)
 		}
 
+	case "validate":
+		input, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
+			os.Exit(ExitError)
+		}
+
+		v := validator.New()
+		results := v.Validate(string(input))
+
+		// Always output a JSON array (empty array when no violations).
+		if results == nil {
+			results = []validator.ValidationResult{}
+		}
+		out, _ := json.MarshalIndent(results, "", "  ")
+		fmt.Println(string(out))
+
+		// Exit 1 if any errors were found.
+		for _, r := range results {
+			if r.Severity == validator.SeverityError {
+				os.Exit(1)
+			}
+		}
+
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\nUsage: promptlint {analyze|serve [port]}\n", cmd)
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\nUsage: promptlint {analyze|validate|serve [port]}\n", cmd)
 		os.Exit(1)
 	}
 }
