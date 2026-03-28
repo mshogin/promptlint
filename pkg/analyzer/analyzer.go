@@ -25,9 +25,10 @@ type Result struct {
 	Questions    int  `json:"questions"`
 
 	// Classification
-	Action     string             `json:"action"`
-	Domain     map[string]float64 `json:"domain"`
-	Complexity string             `json:"complexity"`
+	Action          string             `json:"action"`
+	Domain          map[string]float64 `json:"domain"`
+	Complexity      string             `json:"complexity"`
+	ComplexityScore int                `json:"complexity_score"` // numeric 0-100
 
 	// NLP metrics
 	NLPMetrics metrics.NLPMetrics `json:"nlp_metrics"`
@@ -66,7 +67,8 @@ func AnalyzeWithConfig(prompt string, cfg *config.Config) Result {
 	// Classification
 	r.Action = metrics.DetectAction(prompt)
 	r.Domain = metrics.ClassifyDomain(prompt)
-	r.Complexity = classifyComplexity(r)
+	r.ComplexityScore = complexityScore(r, prompt)
+	r.Complexity = complexityLabel(r.ComplexityScore)
 
 	// NLP metrics
 	r.NLPMetrics = metrics.AnalyzeNLP(prompt)
@@ -84,73 +86,130 @@ func countWords(s string) int {
 	return len(strings.Fields(s))
 }
 
-func classifyComplexity(r Result) string {
-	score := 0
+// complexityScore computes a numeric complexity score in [0, 100].
+// Higher values mean more complex prompts requiring more capable models.
+func complexityScore(r Result, prompt string) int {
+	total := 0
 
-	// Length-based signals
-	if r.Words > 200 {
-		score += 2
-	} else if r.Words > 50 {
-		score++
+	// --- Length signals (max 20 pts) ---
+	switch {
+	case r.Words > 300:
+		total += 20
+	case r.Words > 100:
+		total += 14
+	case r.Words > 40:
+		total += 8
+	case r.Words > 10:
+		total += 3
 	}
 
-	if r.Sentences > 5 {
-		score++
-	}
-
-	if r.Questions > 2 {
-		score++
-	}
-
+	// --- Structural signals (max 14 pts) ---
 	if r.HasCodeBlock {
-		score++
+		total += 8
+	}
+	if r.HasCodeRef {
+		total += 6
 	}
 
-	// Multiple domains = cross-cutting concern = complex
+	// --- Domain signals (max 25 pts) ---
+	archScore := r.Domain["architecture"]
+	switch {
+	case archScore >= 0.7:
+		total += 25
+	case archScore >= 0.3:
+		total += 15
+	case archScore > 0:
+		total += 7
+	}
+
 	activeDomains := 0
 	for _, v := range r.Domain {
 		if v > 0.3 {
 			activeDomains++
 		}
 	}
-	if activeDomains > 2 {
-		score += 2
+	if activeDomains >= 3 {
+		total += 10
 	} else if activeDomains == 2 {
-		score++
+		total += 5
 	}
 
-	// Architecture domain is inherently complex
-	if archScore, ok := r.Domain["architecture"]; ok && archScore > 0.5 {
-		score += 2
-	}
-
-	// Action type weight: design/refactor are harder than fix/explain
+	// --- Action signals (max 15 pts) ---
 	switch r.Action {
-	case "create":
-		score++
 	case "refactor":
-		score += 2
-	}
-
-	// High domain keyword density boosts complexity even for short prompts
-	maxDomainScore := 0.0
-	for _, v := range r.Domain {
-		if v > maxDomainScore {
-			maxDomainScore = v
+		total += 15
+	case "create":
+		if archScore >= 0.7 {
+			// "design/architect" + strong architecture domain = highly complex
+			total += 15
+		} else if archScore > 0 {
+			total += 10
+		} else {
+			total += 7
 		}
-	}
-	if maxDomainScore >= 0.8 {
-		score++
+	case "review":
+		total += 6
+	case "explain":
+		total += 4
+	case "fix":
+		total += 2
 	}
 
+	// --- Question density (max 8 pts) ---
+	if r.Questions >= 3 {
+		total += 8
+	} else if r.Questions == 2 {
+		total += 5
+	} else if r.Questions == 1 {
+		total += 2
+	}
+
+	// --- Technical term density boost (max 8 pts) ---
+	// High technical density in architecture domain signals specialized expertise needed.
+	if archScore >= 0.7 && activeDomains >= 2 {
+		total += 5
+	} else if archScore >= 0.5 {
+		total += 2
+	}
+
+	// --- Role / persona indicators (max 10 pts) ---
+	// Prompts that assign a role ("you are an expert ...", "act as ...") tend to be
+	// multi-step or context-heavy.
+	if metrics.HasRoleIndicator(prompt) {
+		total += 10
+	}
+
+	// --- Multi-step / constraint indicators (max 8 pts) ---
+	if metrics.HasMultiStepIndicator(prompt) {
+		total += 5
+	}
+	if metrics.HasConstraints(prompt) {
+		total += 3
+	}
+
+	if total > 100 {
+		total = 100
+	}
+	return total
+}
+
+// complexityLabel maps a numeric score to a string label.
+func complexityLabel(score int) string {
 	switch {
-	case score >= 4:
+	case score >= 50:
 		return "high"
-	case score >= 2:
+	case score >= 25:
 		return "medium"
 	default:
 		return "low"
 	}
+}
+
+// classifyComplexity is kept for backwards compatibility but delegates to the
+// new numeric scoring approach. Callers that already have a Result should use
+// complexityLabel(complexityScore(r, prompt)) directly.
+func classifyComplexity(r Result) string {
+	return r.Complexity
 }
 
 func suggestModel(r Result, cfg *config.Config) string {

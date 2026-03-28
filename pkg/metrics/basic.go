@@ -92,3 +92,107 @@ func HasFilePath(text string) bool {
 	}
 	return false
 }
+
+// roleIndicatorPhrases are common phrases that assign a persona or expert role.
+var roleIndicatorPhrases = []string{
+	"you are",
+	"you're",
+	"act as",
+	"acting as",
+	"pretend to be",
+	"assume the role",
+	"take the role",
+	"as an expert",
+	"as a senior",
+	"as a principal",
+	"as an architect",
+	"as a security",
+	"as a staff",
+}
+
+// HasRoleIndicator returns true when the prompt assigns a role or persona to the model.
+// These prompts typically carry more context and require higher capability models.
+func HasRoleIndicator(text string) bool {
+	lower := strings.ToLower(text)
+	for _, phrase := range roleIndicatorPhrases {
+		if strings.Contains(lower, phrase) {
+			return true
+		}
+	}
+	return false
+}
+
+// multiStepPhrases are phrases that signal a multi-step or complex workflow request.
+var multiStepPhrases = []string{
+	"step by step",
+	"step-by-step",
+	"first,",
+	"then,",
+	"finally,",
+	"1.",
+	"2.",
+	"3.",
+	"phase 1",
+	"phase 2",
+	"phase one",
+	"phase two",
+	"additionally,",
+	"furthermore,",
+	"after that",
+	"following that",
+}
+
+// HasMultiStepIndicator returns true when the prompt describes a multi-step process
+// or lists multiple sequential tasks.
+func HasMultiStepIndicator(text string) bool {
+	lower := strings.ToLower(text)
+	count := 0
+	for _, phrase := range multiStepPhrases {
+		if strings.Contains(lower, phrase) {
+			count++
+			if count >= 2 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// constraintPhrases signal that the prompt imposes explicit constraints or requirements.
+var constraintPhrases = []string{
+	"must",
+	"should not",
+	"must not",
+	"do not",
+	"don't",
+	"without",
+	"only use",
+	"only if",
+	"ensure that",
+	"make sure",
+	"requirement",
+	"constraint",
+	"restriction",
+	"forbidden",
+	"allowed",
+	"no more than",
+	"at least",
+	"must be",
+	"should be",
+}
+
+// HasConstraints returns true when the prompt contains multiple constraint phrases,
+// indicating a more complex and specific request.
+func HasConstraints(text string) bool {
+	lower := strings.ToLower(text)
+	count := 0
+	for _, phrase := range constraintPhrases {
+		if strings.Contains(lower, phrase) {
+			count++
+			if count >= 2 {
+				return true
+			}
+		}
+	}
+	return false
+}

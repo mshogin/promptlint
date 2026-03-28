@@ -31,16 +31,18 @@ type RouteResult struct {
 }
 
 // Route analyzes a prompt and returns routing decision.
+// Uses numeric ComplexityScore for thresholding instead of string labels,
+// giving finer control over model selection near tier boundaries.
 func (r *Router) Route(prompt string) RouteResult {
 	analysis := analyzer.Analyze(prompt)
 
 	model := r.DefaultModel
-	switch analysis.Complexity {
-	case "high":
+	switch {
+	case analysis.ComplexityScore >= 50:
 		model = r.HighComplexityModel
-	case "medium":
+	case analysis.ComplexityScore >= 25:
 		model = r.MediumComplexityModel
-	case "low":
+	default:
 		model = r.LowComplexityModel
 	}
 

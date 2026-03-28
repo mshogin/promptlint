@@ -64,3 +64,53 @@ func TestAnalyzeEmptyPrompt(t *testing.T) {
 		t.Errorf("expected model 'haiku', got '%s'", r.SuggestedModel)
 	}
 }
+
+func TestComplexityScoreNumeric(t *testing.T) {
+	// Simple bug fix should score low
+	simple := Analyze("Fix bug in server.go")
+	if simple.ComplexityScore >= 25 {
+		t.Errorf("expected complexity_score < 25 for simple prompt, got %d", simple.ComplexityScore)
+	}
+	if simple.Complexity != "low" {
+		t.Errorf("expected complexity 'low' for simple prompt, got '%s'", simple.Complexity)
+	}
+
+	// Architecture prompt should score high
+	arch := Analyze("Design microservices architecture with CQRS pattern, event sourcing, and saga orchestration. Include dependency graph, API gateway, and circuit breaker patterns.")
+	if arch.ComplexityScore < 50 {
+		t.Errorf("expected complexity_score >= 50 for architecture prompt, got %d", arch.ComplexityScore)
+	}
+	if arch.Complexity != "high" {
+		t.Errorf("expected complexity 'high' for architecture prompt, got '%s'", arch.Complexity)
+	}
+	if arch.SuggestedModel != "opus" {
+		t.Errorf("expected model 'opus' for architecture prompt, got '%s'", arch.SuggestedModel)
+	}
+}
+
+func TestComplexityScoreRoleIndicator(t *testing.T) {
+	// Role/persona prompt should score higher than equivalent without role
+	withRole := Analyze("You are an expert security auditor. Analyze this codebase for vulnerabilities.")
+	withoutRole := Analyze("Analyze this codebase for vulnerabilities.")
+
+	if withRole.ComplexityScore <= withoutRole.ComplexityScore {
+		t.Errorf("expected role prompt (score=%d) to score higher than no-role prompt (score=%d)",
+			withRole.ComplexityScore, withoutRole.ComplexityScore)
+	}
+}
+
+func TestComplexityScoreMicroservicesArch(t *testing.T) {
+	// The canonical "before/after" case from issue #15:
+	// "Design microservices arch with CQRS..." should route to opus, not haiku
+	prompt := "Design microservices architecture with CQRS and event sourcing. Include service boundaries, coupling analysis, and deployment pipeline."
+	r := Analyze(prompt)
+
+	if r.Complexity == "low" {
+		t.Errorf("microservices architecture prompt should NOT be 'low' complexity, got '%s' (score=%d)",
+			r.Complexity, r.ComplexityScore)
+	}
+	if r.SuggestedModel == "haiku" {
+		t.Errorf("microservices architecture prompt should NOT route to 'haiku', got '%s' (score=%d)",
+			r.SuggestedModel, r.ComplexityScore)
+	}
+}
