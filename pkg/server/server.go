@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mikeshogin/promptlint/pkg/analyzer"
-	"github.com/mikeshogin/promptlint/pkg/router"
-	"github.com/mikeshogin/promptlint/pkg/validator"
+	"github.com/mshogin/promptlint/pkg/analyzer"
+	"github.com/mshogin/promptlint/pkg/router"
+	"github.com/mshogin/promptlint/pkg/validator"
 )
 
 // New returns an http.Handler with all routes registered.

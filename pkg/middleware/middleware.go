@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/mikeshogin/promptlint/pkg/analyzer"
+	"github.com/mshogin/promptlint/pkg/analyzer"
 )
 
 // Router decides which model to use based on prompt metrics.

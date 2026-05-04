@@ -1,4 +1,4 @@
-module github.com/mikeshogin/promptlint
+module github.com/mshogin/promptlint
 
 go 1.24.1
 

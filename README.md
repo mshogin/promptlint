@@ -97,7 +97,7 @@ echo "prompt" | seclint check --max-rating 16 \
 ## Install
 
 ```bash
-go install github.com/mikeshogin/promptlint/cmd/promptlint@latest
+go install github.com/mshogin/promptlint/cmd/promptlint@latest
 ```
 
 ## Metrics Analyzed

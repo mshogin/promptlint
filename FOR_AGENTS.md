@@ -32,7 +32,7 @@ This project is part of the archlint ecosystem:
 | Project | Role | Repo |
 |---------|------|------|
 | archlint | Code architecture quality gate | [mshogin/archlint](https://github.com/mshogin/archlint) |
-| promptlint | Prompt complexity scoring and model routing | [mikeshogin/promptlint](https://github.com/mikeshogin/promptlint) |
+| promptlint | Prompt complexity scoring and model routing | [mshogin/promptlint](https://github.com/mshogin/promptlint) |
 | costlint | Token cost analysis and optimization | [mikeshogin/costlint](https://github.com/mikeshogin/costlint) |
 | seclint | Content safety and age ratings | [mikeshogin/seclint](https://github.com/mikeshogin/seclint) |
 | sitegen | Static site generation | [mikeshogin/sitegen](https://github.com/mikeshogin/sitegen) |
@@ -46,7 +46,7 @@ Cross-project coordination: [mshogin/archlint issue #3](https://github.com/mshog
 
 ```bash
 # Clone
-git clone https://github.com/mikeshogin/promptlint.git
+git clone https://github.com/mshogin/promptlint.git
 cd REPO
 
 # Build

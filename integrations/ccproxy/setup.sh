@@ -9,7 +9,7 @@ echo "=== promptlint + ccproxy setup ==="
 # Check dependencies
 if ! command -v promptlint &> /dev/null; then
     echo "Installing promptlint..."
-    go install github.com/mikeshogin/promptlint/cmd/promptlint@latest
+    go install github.com/mshogin/promptlint/cmd/promptlint@latest
 fi
 
 if ! command -v pip &> /dev/null; then
@@ -33,7 +33,7 @@ cp "${SCRIPT_DIR}/promptlint_rule.py" "${CCPROXY_DIR}/"
 if [ ! -f "${CCPROXY_DIR}/ccproxy.yaml" ]; then
     cat > "${CCPROXY_DIR}/ccproxy.yaml" << 'YAML'
 # ccproxy configuration with promptlint routing
-# See: https://github.com/mikeshogin/promptlint
+# See: https://github.com/mshogin/promptlint
 
 port: 3456
 

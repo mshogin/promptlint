@@ -3,7 +3,7 @@ package score
 import (
 	"strings"
 
-	"github.com/mikeshogin/promptlint/pkg/metrics"
+	"github.com/mshogin/promptlint/pkg/metrics"
 )
 
 // Breakdown holds the 4 category sub-scores (0-25 each).

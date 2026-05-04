@@ -7,8 +7,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/mikeshogin/promptlint/pkg/config"
-	"github.com/mikeshogin/promptlint/pkg/router"
+	"github.com/mshogin/promptlint/pkg/config"
+	"github.com/mshogin/promptlint/pkg/router"
 )
 
 // ABResult records a single prompt routing result for one variant.

@@ -4,9 +4,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/mikeshogin/promptlint/pkg/config"
-	"github.com/mikeshogin/promptlint/pkg/metrics"
-	"github.com/mikeshogin/promptlint/pkg/score"
+	"github.com/mshogin/promptlint/pkg/config"
+	"github.com/mshogin/promptlint/pkg/metrics"
+	"github.com/mshogin/promptlint/pkg/score"
 )
 
 // Result contains all extracted metrics from a prompt.

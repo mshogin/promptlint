@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/mikeshogin/promptlint/pkg/analyzer"
+	"github.com/mshogin/promptlint/pkg/analyzer"
 )
 
 // Record represents one telemetry entry.

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mikeshogin/promptlint/pkg/analyzer"
-	"github.com/mikeshogin/promptlint/pkg/config"
+	"github.com/mshogin/promptlint/pkg/analyzer"
+	"github.com/mshogin/promptlint/pkg/config"
 )
 
 // RouteResult contains the routing decision and its rationale.

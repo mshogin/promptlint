@@ -4,10 +4,10 @@ package perf
 import (
 	"time"
 
-	"github.com/mikeshogin/promptlint/pkg/analyzer"
-	"github.com/mikeshogin/promptlint/pkg/metrics"
-	"github.com/mikeshogin/promptlint/pkg/router"
-	"github.com/mikeshogin/promptlint/pkg/validator"
+	"github.com/mshogin/promptlint/pkg/analyzer"
+	"github.com/mshogin/promptlint/pkg/metrics"
+	"github.com/mshogin/promptlint/pkg/router"
+	"github.com/mshogin/promptlint/pkg/validator"
 )
 
 // PerfResult holds benchmark results for a single operation.

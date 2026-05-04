@@ -10,15 +10,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mikeshogin/promptlint/pkg/abtest"
-	"github.com/mikeshogin/promptlint/pkg/analyzer"
-	"github.com/mikeshogin/promptlint/pkg/config"
-	"github.com/mikeshogin/promptlint/pkg/perf"
-	"github.com/mikeshogin/promptlint/pkg/router"
-	"github.com/mikeshogin/promptlint/pkg/server"
-	"github.com/mikeshogin/promptlint/pkg/template"
-	"github.com/mikeshogin/promptlint/pkg/trend"
-	"github.com/mikeshogin/promptlint/pkg/validator"
+	"github.com/mshogin/promptlint/pkg/abtest"
+	"github.com/mshogin/promptlint/pkg/analyzer"
+	"github.com/mshogin/promptlint/pkg/config"
+	"github.com/mshogin/promptlint/pkg/perf"
+	"github.com/mshogin/promptlint/pkg/router"
+	"github.com/mshogin/promptlint/pkg/server"
+	"github.com/mshogin/promptlint/pkg/template"
+	"github.com/mshogin/promptlint/pkg/trend"
+	"github.com/mshogin/promptlint/pkg/validator"
 )
 
 // Exit codes for pipeline integration.
