@@ -19,6 +19,7 @@ func New() http.Handler {
 	mux.HandleFunc("/validate", handleValidate)
 	mux.HandleFunc("/route", handleRoute)
 	mux.HandleFunc("/health", handleHealth)
+	mux.Handle("/metrics", metricsHandler())
 	return mux
 }
 
@@ -46,6 +47,7 @@ func handleAnalyze(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := analyzer.Analyze(text)
+	recordAnalyze(topDomain(result.Domain), result.Complexity) // thread-safe client_golang counters
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
