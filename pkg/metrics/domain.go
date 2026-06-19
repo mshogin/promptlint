@@ -31,13 +31,50 @@ var actionVerbs = map[string]string{
 	"improve":    "refactor",
 	"explain":    "explain",
 	"describe":   "explain",
+	// RU action-verbs (корпоративные промпты русские).
+	"исправь":    "fix",
+	"почини":     "fix",
+	"создай":     "create",
+	"напиши":     "create",
+	"добавь":     "create",
+	"реализуй":   "create",
+	"проверь":    "review",
+	"проанализируй": "review",
+	"отрефактори":   "refactor",
+	"перепиши":   "refactor",
+	"удали":      "delete",
+	"спроектируй":   "create",
+	"объясни":    "explain",
+	"опиши":      "explain",
+	"докажи":     "explain",
+	"выведи":     "explain",
+	"реши":       "explain",
 }
 
+// domainKeywords — keyword-подстроки по доменам. Русские заданы КОРНЯМИ (strings.Count ловит
+// подстроку -> «функци» матчит функция/функцию/функции). WB-промпты русские: без рус-корней
+// классификатор слеп (рус-текст -> 0 совпадений -> general), что схлопывало per-prompt роутинг.
 var domainKeywords = map[string][]string{
+	"reasoning": {
+		// EN
+		"prove", "proof", "derive", "theorem", "lemma", "reasoning", "rationale",
+		"step by step", "step-by-step", "deduce", "infer", "logic", "calculate",
+		"compute", "solve", "equation", "math", "formula", "induction",
+		// RU (корни — ловят словоформы)
+		"докаж", "доказательств", "вывед", "теорем", "лемм", "рассужд",
+		"пошагов", "вычисл", "посчитай", "реши", "уравнен", "формул",
+		"логическ", "обоснуй", "обоснован", "выведи", "почему",
+	},
 	"code": {
+		// EN
 		"function", "method", "variable", "class", "struct", "interface",
 		"loop", "array", "string", "int", "bool", "error", "return",
 		"import", "package", "module", "test", "unittest", "assert",
+		"algorithm", "list", "slice", "map", "pointer", "goroutine",
+		// RU (корни)
+		"функци", "метод", "класс", "структур", "интерфейс", "цикл",
+		"массив", "строк", "переменн", "пакет", "тест", "ошибк",
+		"возврат", "список", "алгоритм", "указател", "горутин", "срез",
 	},
 	"architecture": {
 		"architecture", "design", "pattern", "solid", "dip", "srp",
@@ -48,15 +85,25 @@ var domainKeywords = map[string][]string{
 		"event-driven", "distributed", "scalab", "resilien",
 		"load balanc", "api gateway", "circuit breaker", "retry",
 		"dead letter", "idempoten",
+		// RU (корни)
+		"архитектур", "паттерн", "проектир", "зависимост", "связност",
+		"слой", "компонент", "сервис", "микросервис", "монолит", "граф",
+		"масштабир", "отказоустойч", "распределённ", "распределенн",
 	},
 	"infrastructure": {
 		"docker", "kubernetes", "k8s", "nginx", "deploy", "ci", "cd",
 		"pipeline", "server", "vps", "ssh", "container", "pod",
 		"helm", "terraform", "ansible",
+		// RU (корни)
+		"деплой", "разверн", "развёрт", "разверт", "контейнер", "кластер",
+		"сервер", "пайплайн", "инфраструктур",
 	},
 	"content": {
 		"article", "post", "blog", "linkedin", "twitter", "write",
 		"publish", "draft", "headline", "summary", "translate",
+		// RU (корни)
+		"статья", "стать", "пост", "блог", "опубликуй", "опубликов",
+		"черновик", "заголовок", "перевод", "переведи", "текст", "напиши пост",
 	},
 }
 
